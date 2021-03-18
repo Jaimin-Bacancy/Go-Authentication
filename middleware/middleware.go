@@ -49,6 +49,8 @@ func IsAuthorized(handler http.HandlerFunc) http.HandlerFunc {
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
 		}
-
+		var reserr model.Error
+		reserr = utility.SetError(reserr, "Not Authorized")
+		json.NewEncoder(w).Encode(err)
 	}
 }
