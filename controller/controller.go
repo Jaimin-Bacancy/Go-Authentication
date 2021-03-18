@@ -2,7 +2,6 @@ package controller
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"package/database"
@@ -12,26 +11,24 @@ import (
 
 func SingUp(w http.ResponseWriter, r *http.Request) {
 
-	bodydata, err := ioutil.ReadAll(r.Body)
-
-	if err != nil {
-		log.Fatalln("error in body reading")
-	}
-
-	var user model.User
-	err = json.Unmarshal(bodydata, &user)
-	if err != nil {
-		log.Fatalln("error in unmarshal")
-	}
-
 	connection := database.GetDatabase()
 	defer database.Closedatabase(connection)
 
-	var checkuser model.User
-	connection.Where("email = 	?", user.Email).First(&checkuser)
+	var user model.User
 
-	//check email is alredy register
-	if checkuser.Email != "" {
+	err := json.NewDecoder(r.Body).Decode(&user)
+	if err != nil {
+		var err model.Error
+		err = utility.SetError(err, "Error in reading body")
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(err)
+		return
+	}
+	var dbuser model.User
+	connection.Where("email = ?", user.Email).First(&dbuser)
+
+	//check email is alredy register or not
+	if dbuser.Email != "" {
 		var err model.Error
 		err = utility.SetError(err, "Email already in use")
 		w.Header().Set("Content-Type", "application/json")
@@ -44,22 +41,19 @@ func SingUp(w http.ResponseWriter, r *http.Request) {
 		log.Fatalln("error in password hash")
 	}
 
+	//insert user details in database
 	connection.Create(&user)
-	bytedata, err := json.MarshalIndent(user, "", "  ")
-	if err != nil {
-		var err model.Error
-		err = utility.SetError(err, "Error in Marshaling")
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(err)
-		return
-	}
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(bytedata)
+	json.NewEncoder(w).Encode(user)
 }
 
 func SignIn(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	bodydata, err := ioutil.ReadAll(r.Body)
+	connection := database.GetDatabase()
+	defer database.Closedatabase(connection)
+
+	var authdetails model.Authentatication
+
+	err := json.NewDecoder(r.Body).Decode(&authdetails)
 	if err != nil {
 		var err model.Error
 		err = utility.SetError(err, "Error in reading body")
@@ -67,10 +61,7 @@ func SignIn(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(err)
 		return
 	}
-	var authdetails model.Authentatication
-	err = json.Unmarshal(bodydata, &authdetails)
-	connection := database.GetDatabase()
-	defer database.Closedatabase(connection)
+
 	var authuser model.User
 	connection.Where("email = 	?", authdetails.Email).First(&authuser)
 
@@ -83,6 +74,7 @@ func SignIn(w http.ResponseWriter, r *http.Request) {
 	}
 
 	check := utility.CheckPasswordHash(authdetails.Password, authuser.Password)
+
 	if !check {
 		var err model.Error
 		err = utility.SetError(err, "Username or Password is incorrect")
@@ -92,10 +84,6 @@ func SignIn(w http.ResponseWriter, r *http.Request) {
 	}
 
 	validToken, err := utility.GenerateJWT(authuser.Email, authuser.Role)
-	var token model.Token
-	token.Email = authuser.Email
-	token.Role = authuser.Role
-	token.TokenString = validToken
 	if err != nil {
 		var err model.Error
 		err = utility.SetError(err, "Failed to generate token")
@@ -103,12 +91,16 @@ func SignIn(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(err)
 		return
 	}
-	tokendata, err := json.MarshalIndent(token, "", "  ")
-	w.Write([]byte(tokendata))
+
+	var token model.Token
+	token.Email = authuser.Email
+	token.Role = authuser.Role
+	token.TokenString = validToken
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(token)
 }
 
 func Index(w http.ResponseWriter, r *http.Request) {
-
 	w.Write([]byte("HOME PUBLIC INDEX PAGE"))
 }
 
@@ -118,14 +110,6 @@ func AdminIndex(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Write([]byte("ADMIN INDEX PAGE"))
-}
-
-func AdminDisplay(w http.ResponseWriter, r *http.Request) {
-	if r.Header.Get("Role") != "admin" {
-		w.Write([]byte("NOT AUTHORIZED"))
-		return
-	}
-	w.Write([]byte("ADMIN DISPLAY PAGE"))
 }
 
 func UserIndex(w http.ResponseWriter, r *http.Request) {
