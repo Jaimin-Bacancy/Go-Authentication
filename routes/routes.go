@@ -30,15 +30,10 @@ func CreateRouter() {
 
 //InitializeRoute is add routes
 func InitializeRoute() {
-	fs := http.StripPrefix("/static/", http.FileServer(http.Dir("./static")))
-	router.PathPrefix("/static/").Handler(fs)
-	http.Handle("/static/", router)
-
-	router.HandleFunc("/signup", controller.SingUp).Methods("POST")
+	router.HandleFunc("/signup", controller.SignUp).Methods("POST")
 	router.HandleFunc("/signin", controller.SignIn).Methods("POST")
 	router.HandleFunc("/", controller.Index).Methods("GET")
 	router.HandleFunc("/admin", middleware.IsAuthorized(controller.AdminIndex)).Methods("GET")
-	router.HandleFunc("/admin/display", middleware.IsAuthorized(controller.AdminDisplay)).Methods("GET")
 	router.HandleFunc("/user", middleware.IsAuthorized(controller.UserIndex)).Methods("GET")
 	router.Methods("OPTIONS").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "")
@@ -52,6 +47,5 @@ func InitializeRoute() {
 func ServerStart() {
 	serverport := os.Getenv("SERVER_PORT")
 	fmt.Println("Server started at http://localhost" + serverport)
-	//http.ListenAndServe(serverport, router)
 	http.ListenAndServe(serverport, handlers.CORS(handlers.AllowedHeaders([]string{"X-Requested-With", "Access-Control-Allow-Origin", "Content-Type", "Authorization"}), handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS"}), handlers.AllowedOrigins([]string{"*"}))(router))
 }

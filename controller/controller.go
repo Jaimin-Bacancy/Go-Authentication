@@ -9,7 +9,7 @@ import (
 	"package/utility"
 )
 
-func SingUp(w http.ResponseWriter, r *http.Request) {
+func SignUp(w http.ResponseWriter, r *http.Request) {
 
 	connection := database.GetDatabase()
 	defer database.Closedatabase(connection)
