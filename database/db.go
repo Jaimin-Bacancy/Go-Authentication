@@ -1,7 +1,6 @@
 package database
 
 import (
-	"database/sql"
 	"fmt"
 	"log"
 	"os"
@@ -10,8 +9,6 @@ import (
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 )
-
-var db *sql.DB
 
 //GetDatabase is return db connection
 func GetDatabase() *gorm.DB {
@@ -39,7 +36,6 @@ func Closedatabase(connection *gorm.DB) {
 //Initialmigration is migrate model to table
 func Initialmigration() {
 	connection := GetDatabase()
-	connection.AutoMigrate(&model.User{})
 	defer Closedatabase(connection)
-	fmt.Println("migration done")
+	connection.AutoMigrate(&model.User{})
 }
