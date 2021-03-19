@@ -51,7 +51,7 @@ func SignIn(w http.ResponseWriter, r *http.Request) {
 	connection := database.GetDatabase()
 	defer database.Closedatabase(connection)
 
-	var authdetails model.Authentatication
+	var authdetails model.Authentication
 
 	err := json.NewDecoder(r.Body).Decode(&authdetails)
 	if err != nil {

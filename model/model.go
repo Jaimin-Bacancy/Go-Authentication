@@ -10,7 +10,7 @@ type User struct {
 	Role     string `json:"role"`
 }
 
-type Authentatication struct {
+type Authentication struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
